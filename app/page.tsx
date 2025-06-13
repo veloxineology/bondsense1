@@ -15,26 +15,7 @@ import { ArrowRight, Key, MessageSquare, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    try {
-      // Store the API key
-      localStorage.setItem("geminiApiKey", apiKey.trim())
-      toast.success("API key saved successfully!")
-      router.push("/upload")
-    } catch (error) {
-      console.error("Error saving API key:", error)
-      toast.error("Failed to save API key. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   return (
     <MainLayout>
@@ -51,94 +32,42 @@ export default function Home() {
           <Card className="animate-slide-up" style={{ animationDelay: "100ms" }}>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Key className="mr-2 h-5 w-5" />
-                Enter Your API Key
+                <Upload className="mr-2 h-5 w-5" />
+                Upload Your Chat
               </CardTitle>
               <CardDescription>
-                You'll need a Gemini API key to analyze your conversations. Get one for free from Google AI Studio.
+                Upload your Instagram message JSON files to analyze your conversations.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <Input
-                  type="password"
-                  placeholder="Enter your Gemini API key"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  required
-                />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Continue"}
-                </Button>
-              </form>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => window.open("https://aistudio.google.com/app/apikey", "_blank")}>
-                Get API Key
+              <Button 
+                className="w-full" 
+                onClick={() => router.push("/upload")}
+              >
+                Start Analysis
               </Button>
-            </CardFooter>
+            </CardContent>
           </Card>
 
           <Card className="animate-slide-up" style={{ animationDelay: "200ms" }}>
             <CardHeader>
-              <CardTitle>How It Works</CardTitle>
-              <CardDescription>Understand the process of analyzing your conversations</CardDescription>
+              <CardTitle className="flex items-center">
+                <MessageSquare className="mr-2 h-5 w-5" />
+                Get Insights
+              </CardTitle>
+              <CardDescription>
+                Receive detailed insights about your relationship dynamics and communication patterns.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="bg-primary/10 p-2 rounded-full">
-                  <Upload className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium">Upload Your Chat</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Upload your Instagram message JSON files. Your data is processed locally and never stored on our
-                    servers.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <div className="bg-primary/10 p-2 rounded-full">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium">AI Analysis</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Our AI analyzes communication patterns, emotional dynamics, and relationship indicators.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <div className="bg-primary/10 p-2 rounded-full">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-5 w-5 text-primary"
-                  >
-                    <path d="M2 12h20M16 6l6 6-6 6" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium">Get Insights</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Receive detailed insights about your relationship dynamics, communication styles, and emotional
-                    patterns.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" className="w-full" onClick={() => router.push("/upload")}>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => router.push("/upload")}
+              >
                 Try with Demo Data
               </Button>
-            </CardFooter>
+            </CardContent>
           </Card>
         </div>
 
@@ -146,8 +75,7 @@ export default function Home() {
           <h2 className="text-xl font-semibold mb-4">Privacy First</h2>
           <p className="text-muted-foreground">
             Your privacy is our priority. All data processing happens locally in your browser. Your conversations are
-            never stored on our servers or shared with third parties. Only the necessary parts of your conversations are
-            sent to the Gemini API for analysis using your own API key.
+            never stored on our servers or shared with third parties.
           </p>
         </div>
       </div>

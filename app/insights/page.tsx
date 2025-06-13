@@ -62,13 +62,6 @@ export default function InsightsPage() {
   }
 
   useEffect(() => {
-    // Check if API key is set
-    const apiKey = localStorage.getItem("gemini-api-key")
-    if (!apiKey) {
-      router.push("/")
-      return
-    }
-
     // Get chat data from localStorage
     const storedData = localStorage.getItem("chat-analysis-data")
     if (!storedData) {
