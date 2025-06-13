@@ -6,15 +6,21 @@ import Together from "together-ai";
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
 const openRouter = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
   defaultHeaders: process.env.NEXT_PUBLIC_SITE_URL ? {
     "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL,
     "X-Title": "Chat Analysis App",
   } : undefined,
+  dangerouslyAllowBrowser: true,
 });
 const together = new Together({
   apiKey: process.env.TOGETHER_API_KEY,
 });
+
+// Add error handling for missing API keys
+if (!process.env.OPENAI_API_KEY) {
+  console.warn("OpenRouter API key is missing. OpenRouter provider will be disabled.");
+}
 
 export interface AIProvider {
   name: string;
@@ -25,12 +31,15 @@ export const providers: AIProvider[] = [
   {
     name: "gemini",
     analyze: async (prompt: string) => {
+      if (!process.env.GOOGLE_AI_API_KEY) {
+        throw new Error("Google AI API key is missing");
+      }
       const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       const result = await model.generateContent(prompt);
       return result.response.text();
     },
   },
-  {
+  ...(process.env.OPENAI_API_KEY ? [{
     name: "openrouter",
     analyze: async (prompt: string) => {
       const completion = await openRouter.chat.completions.create({
@@ -48,8 +57,8 @@ export const providers: AIProvider[] = [
       }
       return content;
     },
-  },
-  {
+  }] : []),
+  ...(process.env.TOGETHER_API_KEY ? [{
     name: "together",
     analyze: async (prompt: string) => {
       const response = await together.chat.completions.create({
@@ -67,7 +76,7 @@ export const providers: AIProvider[] = [
       }
       return content;
     },
-  },
+  }] : []),
 ];
 
 // Function to get a provider in round-robin fashion
