@@ -14,8 +14,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { Upload, AlertCircle, Loader2, FileText, X } from "lucide-react"
 import { parseJsonFile, extractChatData, combineMultipleChatData, type ParsedChatData } from "@/lib/parse-json"
-// Add the import for validateGeminiApiKey
-import { validateGeminiApiKey } from "@/lib/validate-gemini-api-key"
 import { toast } from "sonner"
 
 interface ChatFile {
@@ -55,7 +53,7 @@ export default function UploadPage() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [router])
+  }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -76,7 +74,10 @@ export default function UploadPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (files.length === 0) {
-      toast.error("Please select at least one file")
+      toast({
+        title: "No files selected",
+        description: "Please select at least one file to analyze"
+      })
       return
     }
 
@@ -152,7 +153,10 @@ export default function UploadPage() {
             ),
           )
 
-          toast.error(`Failed to process ${files[i].file.name}: ${errorMessage}`)
+          toast({
+            title: "File Processing Error",
+            description: `Failed to process ${files[i].file.name}: ${errorMessage}`
+          })
         }
       }
 
@@ -187,7 +191,10 @@ export default function UploadPage() {
         // Store the mock data
         localStorage.setItem("chat-analysis-data", JSON.stringify(mockData))
 
-        toast.success("Using Demo Data")
+        toast({
+          title: "Using Demo Data",
+          description: "No files were successfully processed. Using demo data for analysis."
+        })
       } else {
         // Combine the real data from successful files
         const combinedData = combineMultipleChatData(successfullyProcessedFiles.map((file) => file.data!))
@@ -196,7 +203,10 @@ export default function UploadPage() {
         // Store the combined data in localStorage for use in analysis pages
         localStorage.setItem("chat-analysis-data", JSON.stringify(combinedData))
 
-        toast.success(`Successfully analyzed ${successfullyProcessedFiles.length} file${successfullyProcessedFiles.length > 1 ? "s" : ""}`)
+        toast({
+          title: "Analysis Complete",
+          description: `Successfully analyzed ${successfullyProcessedFiles.length} file${successfullyProcessedFiles.length > 1 ? "s" : ""}`
+        })
       }
 
       setOverallProgress(100)
@@ -215,7 +225,10 @@ export default function UploadPage() {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
       setUploadError(errorMessage)
 
-      toast.error(`An error occurred during analysis: ${errorMessage}`)
+      toast({
+        title: "Analysis Error",
+        description: `An error occurred during analysis: ${errorMessage}`
+      })
     }
   }
 
@@ -362,7 +375,10 @@ export default function UploadPage() {
                     // Store the mock data
                     localStorage.setItem("chat-analysis-data", JSON.stringify(mockData))
 
-                    toast.success("Using Demo Data")
+                    toast({
+                      title: "Using Demo Data",
+                      description: "No files were successfully processed. Using demo data for analysis."
+                    })
 
                     // Redirect to analysis page
                     setTimeout(() => {
