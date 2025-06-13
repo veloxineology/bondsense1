@@ -9,13 +9,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { Upload, AlertCircle, Loader2, FileText, X } from "lucide-react"
 import { parseJsonFile, extractChatData, combineMultipleChatData, type ParsedChatData } from "@/lib/parse-json"
 import { toast } from "sonner"
-import { analyzeMultipleChatFiles } from "@/lib/analyze-chat"
+import analyzeMultipleChatFiles from "@/lib/analyze-chat"
 
 interface ChatFile {
   file: File
@@ -26,7 +25,6 @@ interface ChatFile {
 }
 
 export default function UploadPage() {
-  const { toast } = useToast()
   const router = useRouter()
   const [files, setFiles] = useState<ChatFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -75,10 +73,7 @@ export default function UploadPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (files.length === 0) {
-      toast({
-        title: "No files selected",
-        description: "Please select at least one file to analyze"
-      })
+      toast("No files selected - Please select at least one file to analyze")
       return
     }
 
@@ -138,42 +133,62 @@ export default function UploadPage() {
             ),
           )
 
-          toast({
-            title: "File Processing Error",
-            description: `Failed to process ${files[i].file.name}: ${errorMessage}`
-          })
+          toast(`File Processing Error - Failed to process ${files[i].file.name}: ${errorMessage}`)
         }
       }
 
       if (successfullyProcessedFiles.length === 0) {
-        throw new Error("No files were successfully processed")
+        // Generate mock data if no files were successfully processed
+        const mockData: ParsedChatData = {
+          participants: ["Tanisha", "Kaushik"],
+          messageCount: 100,
+          messagesByParticipant: {
+            Tanisha: 45,
+            Kaushik: 55
+          },
+          timeSpan: {
+            start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+            end: new Date(),
+            durationDays: 30
+          },
+          averageMessagesPerDay: 3,
+          messages: [], // Empty array for mock data
+          textMessages: [], // Empty array for mock data
+          mediaMessages: [] // Empty array for mock data
+        }
+
+        // Store the mock data
+        localStorage.setItem("chat-analysis-data", JSON.stringify(mockData))
+
+        toast("Using Demo Data - No files were successfully processed. Using demo data for analysis.")
+
+        // Redirect to analysis page
+        setTimeout(() => {
+          router.push("/analysis")
+        }, 1000)
+      } else {
+        // Start the analysis process
+        setCurrentStep("Analyzing chat data with AI...")
+        
+        // Use the analysis function
+        const analysis = await analyzeMultipleChatFiles(successfullyProcessedFiles)
+        setOverallProgress(100)
+        setCurrentStep("Analysis complete!")
+
+        // Store the analysis results
+        localStorage.setItem("chat-analysis-data", JSON.stringify(analysis))
+
+        toast(`Analysis Complete - Successfully analyzed ${successfullyProcessedFiles.length} file${successfullyProcessedFiles.length > 1 ? "s" : ""}`)
+
+        setOverallProgress(100)
+        isProcessing.current = false
+        setIsUploading(false)
+
+        // Redirect to analysis page
+        setTimeout(() => {
+          router.push("/analysis")
+        }, 1000)
       }
-
-      // Start the analysis process
-      setCurrentStep("Analyzing chat data with AI...")
-      
-      // Use the new analysis function with progress tracking
-      const analysis = await analyzeMultipleChatFiles(successfullyProcessedFiles, (progress) => {
-        setOverallProgress(progress)
-        setCurrentStep(`Analyzing chat data... ${Math.round(progress)}%`)
-      })
-
-      // Store the analysis results
-      localStorage.setItem("chat-analysis-data", JSON.stringify(analysis))
-
-      toast({
-        title: "Analysis Complete",
-        description: `Successfully analyzed ${successfullyProcessedFiles.length} file${successfullyProcessedFiles.length > 1 ? "s" : ""}`
-      })
-
-      setOverallProgress(100)
-      isProcessing.current = false
-      setIsUploading(false)
-
-      // Redirect to analysis page
-      setTimeout(() => {
-        router.push("/analysis")
-      }, 1000)
     } catch (error) {
       console.error("Error during upload process:", error)
       isProcessing.current = false
@@ -182,10 +197,7 @@ export default function UploadPage() {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
       setUploadError(errorMessage)
 
-      toast({
-        title: "Analysis Error",
-        description: `An error occurred during analysis: ${errorMessage}`
-      })
+      toast(`Analysis Error - An error occurred during analysis: ${errorMessage}`)
     }
   }
 
@@ -316,26 +328,26 @@ export default function UploadPage() {
                     // Create mock data with default values
                     const mockData: ParsedChatData = {
                       participants: ["Tanisha", "Kaushik"],
-                      messageCount: 500,
+                      messageCount: 100,
                       messagesByParticipant: {
-                        Tanisha: 250,
-                        Kaushik: 250,
+                        Tanisha: 45,
+                        Kaushik: 55
                       },
                       timeSpan: {
-                        start: new Date(2023, 0, 1),
+                        start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
                         end: new Date(),
-                        durationDays: 365,
+                        durationDays: 30
                       },
-                      averageMessagesPerDay: 1.5,
+                      averageMessagesPerDay: 3,
+                      messages: [], // Empty array for mock data
+                      textMessages: [], // Empty array for mock data
+                      mediaMessages: [] // Empty array for mock data
                     }
 
                     // Store the mock data
                     localStorage.setItem("chat-analysis-data", JSON.stringify(mockData))
 
-                    toast({
-                      title: "Using Demo Data",
-                      description: "No files were successfully processed. Using demo data for analysis."
-                    })
+                    toast("Using Demo Data - No files were successfully processed. Using demo data for analysis.")
 
                     // Redirect to analysis page
                     setTimeout(() => {

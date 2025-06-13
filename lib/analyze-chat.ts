@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import type { AnalysisResult } from "./types"
+import type { ParsedChatData } from "./parse-json"
 
 interface ChatMessage {
   sender_name: string
@@ -72,7 +73,7 @@ export async function analyzeChatData(chatData: any, onProgress?: (progress: num
 }
 
 // Function to analyze multiple chat files
-export async function analyzeMultipleChatFiles(files: any[], onProgress?: (progress: number) => void) {
+async function analyzeMultipleChatFiles(files: { data: ParsedChatData }[]) {
   try {
     const analyses = []
     const totalFiles = files.length
@@ -81,25 +82,14 @@ export async function analyzeMultipleChatFiles(files: any[], onProgress?: (progr
       const file = files[i]
       const fileProgress = (i / totalFiles) * 100
       
-      // Update overall progress
-      onProgress?.(fileProgress)
-
       // Analyze each file
-      const analysis = await analyzeChatData(file.data, (progress) => {
-        // Calculate progress within the current file
-        const fileSpecificProgress = (progress / totalFiles)
-        // Update overall progress
-        onProgress?.(fileProgress + fileSpecificProgress)
-      })
+      const analysis = await analyzeChatData(file.data)
 
       analyses.push(analysis)
     }
 
     // Combine analyses
     const combinedAnalysis = combineAnalyses(analyses)
-
-    // Update final progress
-    onProgress?.(100)
 
     return combinedAnalysis
   } catch (error) {
@@ -130,4 +120,6 @@ function combineAnalyses(analyses: any[]) {
       }
     }
   }
-} 
+}
+
+export default analyzeMultipleChatFiles 
