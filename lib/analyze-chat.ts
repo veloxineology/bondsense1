@@ -66,8 +66,9 @@ async function analyzeChatData(
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   const maxRetries = 3;
   const retryDelay = 5000; // 5 seconds
+  const requestDelay = 6000; // 6 seconds between requests to stay well under rate limit
 
-  const chunkMessages = (messages: Message[], chunkSize: number = 50) => {
+  const chunkMessages = (messages: Message[], chunkSize: number = 30) => { // Reduced chunk size
     const chunks: Message[][] = [];
     for (let i = 0; i < messages.length; i += chunkSize) {
       chunks.push(messages.slice(i, i + chunkSize));
@@ -89,6 +90,9 @@ async function analyzeChatData(
         const nextChunkProgress = Math.floor(((i + 1) / chunks.length) * 100);
         
         onProgress(chunkProgress, `Analyzing chunk ${i + 1} of ${chunks.length}...`);
+
+        // Add delay before each request
+        await new Promise(resolve => setTimeout(resolve, requestDelay));
 
         const prompt = `Analyze this chat data and provide insights in JSON format. Focus on communication patterns, emotional dynamics, and relationship insights. Here's the data:
 
@@ -137,11 +141,6 @@ Provide the analysis in this exact JSON format:
           throw new Error(`Failed to parse analysis response: ${errorMessage}`);
         }
 
-        // Add delay between chunks to respect rate limits
-        if (i < chunks.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 4000));
-        }
-
         onProgress(nextChunkProgress, `Completed chunk ${i + 1} of ${chunks.length}`);
       } catch (error) {
         retryCount++;
@@ -150,8 +149,9 @@ Provide the analysis in this exact JSON format:
           error.message.includes('overloaded');
 
         if (isModelOverloaded && retryCount < maxRetries) {
-          console.log(`Model overloaded, retrying in ${retryDelay/1000} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          const backoffDelay = retryDelay * Math.pow(2, retryCount - 1); // Exponential backoff
+          console.log(`Model overloaded, retrying in ${backoffDelay/1000} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
           continue;
         }
 
