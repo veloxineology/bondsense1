@@ -38,7 +38,7 @@ export async function analyzeChatData(chatData: any, onProgress?: (progress: num
     // Process each chunk
     for (let i = 0; i < messageChunks.length; i++) {
       const chunk = messageChunks[i]
-      const chunkProgress = (i / messageChunks.length) * 100
+      const chunkProgress = Math.floor((i / messageChunks.length) * 100)
       onProgress?.(chunkProgress)
 
       // Prepare the prompt for analysis
@@ -79,6 +79,10 @@ export async function analyzeChatData(chatData: any, onProgress?: (progress: num
       // Parse the response
       const analysis = JSON.parse(text)
       analyses.push(analysis)
+
+      // Update progress after each chunk
+      const nextChunkProgress = Math.floor(((i + 1) / messageChunks.length) * 100)
+      onProgress?.(nextChunkProgress)
     }
 
     // Combine all chunk analyses
