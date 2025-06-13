@@ -168,12 +168,23 @@ export default function UploadPage() {
         }, 1000)
       } else {
         // Start the analysis process
-        setCurrentStep("Analyzing chat data with AI...")
+        setCurrentStep("Starting chat analysis with Gemini 2.0 Flash...")
+        setOverallProgress(10)
         
         // Use the analysis function
         const analysis = await analyzeMultipleChatFiles(successfullyProcessedFiles)
+        
+        // Update progress for each file
+        for (let i = 0; i < successfullyProcessedFiles.length; i++) {
+          const fileProgress = ((i + 1) / successfullyProcessedFiles.length) * 100
+          setOverallProgress(fileProgress)
+          setCurrentStep(`Analyzing file ${i + 1}/${successfullyProcessedFiles.length}...`)
+          // Add a delay to show progress
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+
         setOverallProgress(100)
-        setCurrentStep("Analysis complete!")
+        setCurrentStep("Analysis complete! Preparing results...")
 
         // Store the analysis results
         localStorage.setItem("chat-analysis-data", JSON.stringify(analysis))

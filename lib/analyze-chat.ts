@@ -19,8 +19,8 @@ const genAI = new GoogleGenerativeAI("AIzaSyAdRc52V5BRqC-JOxzBxHlyAS9xw_O2hUg")
 // Function to analyze chat data using Gemini
 export async function analyzeChatData(chatData: any, onProgress?: (progress: number) => void) {
   try {
-    // Get the Gemini Pro model
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+    // Get the Gemini 2.0 Flash model
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
 
     // Prepare the prompt for analysis
     const prompt = `Analyze this chat data and provide insights about the relationship between the participants. 
@@ -51,7 +51,8 @@ export async function analyzeChatData(chatData: any, onProgress?: (progress: num
     // Update progress to 20%
     onProgress?.(20)
 
-    // Generate content
+    // Generate content with a delay to respect rate limits
+    await new Promise(resolve => setTimeout(resolve, 4000)) // 4 second delay between requests
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
