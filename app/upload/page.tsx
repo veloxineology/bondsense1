@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation"
 import { Upload, AlertCircle, Loader2, FileText, X } from "lucide-react"
 import { parseJsonFile, extractChatData, combineMultipleChatData, type ParsedChatData } from "@/lib/parse-json"
 import { toast } from "sonner"
+import { analyzeMultipleChatFiles } from "@/lib/analyze-chat"
 
 interface ChatFile {
   file: File
@@ -83,9 +84,9 @@ export default function UploadPage() {
 
     setIsUploading(true)
     isProcessing.current = true
-    setOverallProgress(10)
+    setOverallProgress(0)
     setCurrentStep("Preparing files for analysis...")
-    setUploadError(null) // Clear any previous errors
+    setUploadError(null)
 
     try {
       console.log(`Starting to process ${files.length} files`)
@@ -117,20 +118,6 @@ export default function UploadPage() {
           const parsedData = extractChatData(jsonData)
           console.log("Extracted chat data:", parsedData)
 
-          setCurrentStep(`Analyzing communication patterns in ${files[i].file.name}...`)
-          setFiles((prev) => prev.map((file, index) => (index === i ? { ...file, progress: 60 } : file)))
-          setOverallProgress(Math.floor((i * 100 + 60) / files.length))
-
-          // Simulate more processing
-          await new Promise((resolve) => setTimeout(resolve, 500))
-
-          setCurrentStep(`Extracting emotional insights from ${files[i].file.name}...`)
-          setFiles((prev) => prev.map((file, index) => (index === i ? { ...file, progress: 80 } : file)))
-          setOverallProgress(Math.floor((i * 100 + 80) / files.length))
-
-          // Simulate final processing
-          await new Promise((resolve) => setTimeout(resolve, 500))
-
           // Update file with parsed data
           const updatedFile = {
             ...files[i],
@@ -140,9 +127,7 @@ export default function UploadPage() {
           }
 
           setFiles((prev) => prev.map((file, index) => (index === i ? updatedFile : file)))
-
           successfullyProcessedFiles.push(updatedFile)
-          setOverallProgress(Math.floor(((i + 1) * 100) / files.length))
         } catch (error) {
           console.error(`Error processing file ${files[i].file.name}:`, error)
           const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -160,54 +145,26 @@ export default function UploadPage() {
         }
       }
 
-      // Final processing step - combine all data
-      setCurrentStep("Generating comprehensive relationship insights...")
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Combine data from all successfully processed files
-      console.log(`Successfully processed ${successfullyProcessedFiles.length} out of ${files.length} files`)
-
       if (successfullyProcessedFiles.length === 0) {
-        // Instead of throwing an error, create mock data for demonstration
-        console.log("No files were successfully processed, creating mock data")
-        setUploadError("No files were successfully processed. Using demo data instead.")
-
-        // Create mock data with default values
-        const mockData: ParsedChatData = {
-          participants: ["Tanisha", "Kaushik"],
-          messageCount: 500,
-          messagesByParticipant: {
-            Tanisha: 250,
-            Kaushik: 250,
-          },
-          timeSpan: {
-            start: new Date(2023, 0, 1),
-            end: new Date(),
-            durationDays: 365,
-          },
-          averageMessagesPerDay: 1.5,
-        }
-
-        // Store the mock data
-        localStorage.setItem("chat-analysis-data", JSON.stringify(mockData))
-
-        toast({
-          title: "Using Demo Data",
-          description: "No files were successfully processed. Using demo data for analysis."
-        })
-      } else {
-        // Combine the real data from successful files
-        const combinedData = combineMultipleChatData(successfullyProcessedFiles.map((file) => file.data!))
-        console.log("Combined data:", combinedData)
-
-        // Store the combined data in localStorage for use in analysis pages
-        localStorage.setItem("chat-analysis-data", JSON.stringify(combinedData))
-
-        toast({
-          title: "Analysis Complete",
-          description: `Successfully analyzed ${successfullyProcessedFiles.length} file${successfullyProcessedFiles.length > 1 ? "s" : ""}`
-        })
+        throw new Error("No files were successfully processed")
       }
+
+      // Start the analysis process
+      setCurrentStep("Analyzing chat data with AI...")
+      
+      // Use the new analysis function with progress tracking
+      const analysis = await analyzeMultipleChatFiles(successfullyProcessedFiles, (progress) => {
+        setOverallProgress(progress)
+        setCurrentStep(`Analyzing chat data... ${Math.round(progress)}%`)
+      })
+
+      // Store the analysis results
+      localStorage.setItem("chat-analysis-data", JSON.stringify(analysis))
+
+      toast({
+        title: "Analysis Complete",
+        description: `Successfully analyzed ${successfullyProcessedFiles.length} file${successfullyProcessedFiles.length > 1 ? "s" : ""}`
+      })
 
       setOverallProgress(100)
       isProcessing.current = false

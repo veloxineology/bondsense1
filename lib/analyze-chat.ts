@@ -13,104 +13,122 @@ interface ChatData {
   messages: ChatMessage[]
 }
 
-export default async function analyzeChatWithGemini(chatData: string): Promise<AnalysisResult> {
+// Initialize the Google Generative AI with your API key
+const genAI = new GoogleGenerativeAI("AIzaSyAdRc52V5BRqC-JOxzBxHlyAS9xw_O2hUg")
+
+// Function to analyze chat data using Gemini
+export async function analyzeChatData(chatData: any, onProgress?: (progress: number) => void) {
   try {
-    // Use hardcoded API key
-    const apiKey = "AIzaSyAdRc52V5BRqC-JOxzBxHlyAS9xw_O2hUg"
-
-    // Parse the chat data
-    const data: ChatData = JSON.parse(chatData)
-    const [participant1, participant2] = data.participants.map(p => p.name)
-
-    // Initialize the Gemini API
-    const genAI = new GoogleGenerativeAI(apiKey)
+    // Get the Gemini Pro model
     const model = genAI.getGenerativeModel({ model: "gemini-pro" })
 
     // Prepare the prompt for analysis
-    const prompt = `Analyze this chat conversation between ${participant1} and ${participant2}. 
-    Provide a detailed analysis in the following JSON format:
+    const prompt = `Analyze this chat data and provide insights about the relationship between the participants. 
+    Focus on communication patterns, emotional dynamics, and overall relationship health.
+    Format the response as a JSON object with the following structure:
     {
-      "quantitative": {
-        "emotional_intimacy": number (0-100),
-        "emotional_vulnerability": number (0-100),
-        "emotional_balance": number (0-100),
-        "romantic_affection": number (0-100),
-        "emotional_mirroring": number (0-100),
-        "expressions_of_missing_or_longing": number (0-100),
-        "feeling_of_home": number (0-100),
-        "emotional_dependency": number (0-100),
-        "empathy_signals": number (0-100),
-        "trust_level": number (0-100),
-        "sense_of_security": number (0-100),
-        "disclosure_depth": number (0-100),
-        "willingness_to_reconcile": number (0-100),
-        "respect_level": number (0-100),
-        "tone_consistency": number (0-100),
-        "love_language_alignment": number (0-100),
-        "nickname_frequency": number (0-100),
-        "inside_jokes_present": number (0-100),
-        "long_message_ratio": number (0-100),
-        "response_speed": number (0-100),
-        "frequency_of_check_ins": number (0-100),
-        "future_commitment_signals": number (0-100),
-        "imagining_shared_future": number (0-100),
-        "planning_together": number (0-100),
-        "sacrifices_mentioned": number (0-100),
-        "mutual_care": number (0-100),
-        "consistency_in_attention": number (0-100),
-        "care_in_small_details": number (0-100),
-        "message_prioritization": number (0-100),
-        "expressed_needs": number (0-100),
-        "attention_to_mood_swings": number (0-100),
-        "effort_reciprocity": number (0-100),
-        "playfulness": number (0-100),
-        "conflict_handling": number (0-100),
-        "daydreaming_references": number (0-100)
-      },
       "descriptive": {
-        "personality_summary_sender": "Detailed analysis of ${participant1}'s personality based on their messages",
-        "personality_summary_receiver": "Detailed analysis of ${participant2}'s personality based on their messages",
-        "togetherness_outlook": "Analysis of how well they complement each other and their relationship dynamics",
-        "communication_style_description": "Detailed analysis of their communication patterns and styles",
-        "emotional_depth_description": "Analysis of the emotional depth and connection in their conversations",
-        "intellectual_connection_description": "Analysis of their intellectual rapport and shared interests",
-        "relationship_growth_potential": "Analysis of the relationship's potential for growth and development",
-        "long_term_stability_prediction": "Analysis of the relationship's long-term stability and sustainability",
-        "dependency_balance_description": "Analysis of their level of interdependence and individual autonomy",
-        "friendship_layer_strength": "Analysis of their friendship foundation and shared experiences"
+        "personality_summary_sender": "string",
+        "personality_summary_receiver": "string",
+        "communication_style": "string",
+        "emotional_dynamics": "string",
+        "relationship_health": "string"
+      },
+      "quantitative": {
+        "message_frequency": number,
+        "response_time_avg": number,
+        "emotion_scores": {
+          "positive": number,
+          "negative": number,
+          "neutral": number
+        }
       }
     }
 
-    Consider the following aspects in your analysis:
-    1. Message frequency and patterns
-    2. Emotional expression and vulnerability
-    3. Communication style and tone
-    4. Shared experiences and inside jokes
-    5. Future planning and commitment signals
-    6. Conflict resolution patterns
-    7. Support and care expressions
-    8. Personal growth and development
-    9. Trust and security indicators
-    10. Overall relationship dynamics
+    Chat Data:
+    ${JSON.stringify(chatData, null, 2)}`
 
-    Here's the chat data to analyze:
-    ${JSON.stringify(data, null, 2)}`
+    // Update progress to 20%
+    onProgress?.(20)
 
-    // Generate analysis using Gemini
+    // Generate content
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
 
+    // Update progress to 80%
+    onProgress?.(80)
+
     // Parse the response
-    try {
-      const analysis = JSON.parse(text) as AnalysisResult
-      return analysis
-    } catch (parseError) {
-      console.error("Error parsing Gemini response:", parseError)
-      throw new Error("Failed to parse analysis response")
-    }
+    const analysis = JSON.parse(text)
+
+    // Update progress to 100%
+    onProgress?.(100)
+
+    return analysis
   } catch (error) {
-    console.error("Error analyzing chat with Gemini:", error)
-    throw new Error("Failed to analyze chat data")
+    console.error("Error analyzing chat data:", error)
+    throw error
+  }
+}
+
+// Function to analyze multiple chat files
+export async function analyzeMultipleChatFiles(files: any[], onProgress?: (progress: number) => void) {
+  try {
+    const analyses = []
+    const totalFiles = files.length
+
+    for (let i = 0; i < totalFiles; i++) {
+      const file = files[i]
+      const fileProgress = (i / totalFiles) * 100
+      
+      // Update overall progress
+      onProgress?.(fileProgress)
+
+      // Analyze each file
+      const analysis = await analyzeChatData(file.data, (progress) => {
+        // Calculate progress within the current file
+        const fileSpecificProgress = (progress / totalFiles)
+        // Update overall progress
+        onProgress?.(fileProgress + fileSpecificProgress)
+      })
+
+      analyses.push(analysis)
+    }
+
+    // Combine analyses
+    const combinedAnalysis = combineAnalyses(analyses)
+
+    // Update final progress
+    onProgress?.(100)
+
+    return combinedAnalysis
+  } catch (error) {
+    console.error("Error analyzing multiple chat files:", error)
+    throw error
+  }
+}
+
+// Helper function to combine multiple analyses
+function combineAnalyses(analyses: any[]) {
+  // Implement your logic to combine multiple analyses
+  // This is a simple example - you might want to make it more sophisticated
+  return {
+    descriptive: {
+      personality_summary_sender: analyses.map(a => a.descriptive.personality_summary_sender).join(" "),
+      personality_summary_receiver: analyses.map(a => a.descriptive.personality_summary_receiver).join(" "),
+      communication_style: analyses.map(a => a.descriptive.communication_style).join(" "),
+      emotional_dynamics: analyses.map(a => a.descriptive.emotional_dynamics).join(" "),
+      relationship_health: analyses.map(a => a.descriptive.relationship_health).join(" ")
+    },
+    quantitative: {
+      message_frequency: analyses.reduce((sum, a) => sum + a.quantitative.message_frequency, 0) / analyses.length,
+      response_time_avg: analyses.reduce((sum, a) => sum + a.quantitative.response_time_avg, 0) / analyses.length,
+      emotion_scores: {
+        positive: analyses.reduce((sum, a) => sum + a.quantitative.emotion_scores.positive, 0) / analyses.length,
+        negative: analyses.reduce((sum, a) => sum + a.quantitative.emotion_scores.negative, 0) / analyses.length,
+        neutral: analyses.reduce((sum, a) => sum + a.quantitative.emotion_scores.neutral, 0) / analyses.length
+      }
+    }
   }
 } 
