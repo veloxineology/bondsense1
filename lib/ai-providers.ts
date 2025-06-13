@@ -1,3 +1,5 @@
+// AI Providers for chat analysis
+// Last updated: 2024-03-19
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Together from "together-ai";
 
