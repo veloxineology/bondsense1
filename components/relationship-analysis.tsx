@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { QuantitativeChart } from "./relationship-analysis/quantitative-chart"
 import { DescriptiveInsight } from "./relationship-analysis/descriptive-insight"
 import { Heart, Brain, MessageCircle, TrendingUp, Users, Sparkles, Target } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
 
 interface MessageDistribution {
   name: string
@@ -95,60 +96,24 @@ export default function RelationshipAnalysis({ data, messageDistribution }: Rela
     <div className={`space-y-8 transition-opacity duration-1000 ${fadeIn ? "opacity-100" : "opacity-0"}`}>
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {Object.entries(categoryScores)
-          .slice(0, 6)
-          .map(([category, score], index) => (
-            <Card
-              key={category}
-              className={`border-2 cursor-pointer transition-all hover:shadow-lg ${
-                selectedCategory === category
-                  ? "border-primary shadow-lg scale-105"
-                  : "border-gray-200 hover:border-primary/50"
-              } bg-white`}
-              onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-lg capitalize text-gray-900">{category}</h3>
-                    <p className="text-sm text-gray-500">
-                      {selectedCategory === category ? "Click to clear filter" : "Click to filter"}
-                    </p>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="relative w-16 h-16">
-                      <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 120 120">
-                        <circle cx="60" cy="60" r="50" stroke="#e5e7eb" strokeWidth="12" fill="none" />
-                        <circle
-                          cx="60"
-                          cy="60"
-                          r="50"
-                          stroke={
-                            score >= 80 ? "#10b981" : score >= 60 ? "#3b82f6" : score >= 40 ? "#f59e0b" : "#ef4444"
-                          }
-                          strokeWidth="12"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeDasharray={`${(score / 100) * 314.16} 314.16`}
-                          className="transition-all duration-1000 ease-out animate-draw-circle"
-                          style={{ animationDelay: `${index * 200}ms` }}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div
-                          className="text-xl font-bold text-gray-800 animate-fade-in"
-                          style={{ animationDelay: `${index * 200 + 500}ms` }}
-                        >
-                          {score}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+        {Object.entries(categoryScores).map(([category, score]) => (
+          <Card key={category} className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg dark:from-blue-950 dark:to-blue-900 dark:border-blue-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-700 dark:text-blue-300">Score</span>
+                  <span className="font-medium text-blue-900 dark:text-blue-100">{score}%</span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <Progress value={score} className="h-2 bg-blue-200 dark:bg-blue-800" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Message Distribution - if available */}
@@ -326,7 +291,6 @@ export default function RelationshipAnalysis({ data, messageDistribution }: Rela
               title="Commitment Signals"
               description="Indicators of commitment to the relationship"
               category={selectedCategory || "commitment"}
-              animation={600}
             />
           </div>
 
