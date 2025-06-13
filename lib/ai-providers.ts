@@ -1,31 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import OpenAI from "openai";
 import Together from "together-ai";
 
 // Initialize AI providers
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
-
-// Initialize OpenRouter client only on server side
-let openRouter: OpenAI | null = null;
-if (typeof window === 'undefined' && process.env.OPENAI_API_KEY) {
-  openRouter = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENAI_API_KEY,
-    defaultHeaders: process.env.NEXT_PUBLIC_SITE_URL ? {
-      "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL,
-      "X-Title": "Chat Analysis App",
-    } : undefined,
-  });
-}
-
 const together = new Together({
   apiKey: process.env.TOGETHER_API_KEY,
 });
-
-// Add error handling for missing API keys
-if (!process.env.OPENAI_API_KEY) {
-  console.warn("OpenRouter API key is missing. OpenRouter provider will be disabled.");
-}
 
 export interface AIProvider {
   name: string;
@@ -44,33 +24,6 @@ export const providers: AIProvider[] = [
       return result.response.text();
     },
   },
-  ...(openRouter ? [{
-    name: "openrouter",
-    analyze: async (prompt: string) => {
-      if (!openRouter) {
-        throw new Error("OpenRouter client is not initialized");
-      }
-      try {
-        const completion = await openRouter.chat.completions.create({
-          model: "google/gemini-2.0-flash-exp:free",
-          messages: [
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-        });
-        const content = completion.choices[0]?.message?.content;
-        if (!content) {
-          throw new Error("No content received from OpenRouter");
-        }
-        return content;
-      } catch (error) {
-        console.error("OpenRouter API error:", error);
-        throw new Error(`OpenRouter API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    },
-  }] : []),
   ...(process.env.TOGETHER_API_KEY ? [{
     name: "together",
     analyze: async (prompt: string) => {
@@ -108,7 +61,7 @@ export function getNextProvider(): AIProvider {
 // Function to analyze text using multiple providers in parallel
 export async function analyzeWithMultipleProviders(
   prompt: string,
-  numProviders: number = 3 // Updated to use all three providers
+  numProviders: number = providers.length
 ): Promise<string[]> {
   const selectedProviders = providers.slice(0, numProviders);
   const results = await Promise.all(
