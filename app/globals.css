@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 350 100% 98%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 346 77% 49%;
+    --primary-foreground: 355 100% 97%;
+    --secondary: 346 100% 92%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 346 100% 96%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 346 100% 92%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 346 100% 88%;
+    --input: 346 100% 88%;
+    --ring: 346 77% 49%;
+    --radius: 0.5rem;
+
+    /* Sidebar variables */
+    --sidebar-background: 350 100% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 346 77% 49%;
+    --sidebar-primary-foreground: 355 100% 97%;
+    --sidebar-accent: 346 100% 92%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 346 100% 88%;
+    --sidebar-ring: 346 77% 49%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes growWidth {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes drawCircle {
+  from {
+    stroke-dasharray: 0 314.16;
+  }
+}
+
+@keyframes bounceSlow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulseSlow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out forwards;
+}
+
+.animate-fade-in-delay {
+  animation: fadeIn 0.5s ease-in-out 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-delay-2 {
+  animation: fadeIn 0.5s ease-in-out 0.6s forwards;
+  opacity: 0;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.5s ease-in-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-in-out forwards;
+}
+
+.animate-slide-right {
+  animation: slideRight 0.5s ease-in-out forwards;
+}
+
+.animate-slide-left {
+  animation: slideLeft 0.5s ease-in-out forwards;
+}
+
+.animate-grow-width {
+  animation: growWidth 1s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-in-out forwards;
+}
+
+.animate-draw-circle {
+  animation: drawCircle 1.5s ease-in-out forwards;
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 2s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 2s ease-in-out infinite;
+}
+
+/* Custom styles for file upload area */
+.file-drop-area {
+  @apply border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors;
+}
+
+.file-drop-area:hover {
+  @apply bg-muted/50;
+}
+
+/* Custom styles for progress bars */
+.progress-bar-container {
+  @apply w-full bg-muted rounded-full h-2 overflow-hidden;
+}
+
+.progress-bar {
+  @apply h-full bg-primary transition-all duration-300 ease-out;
+}
