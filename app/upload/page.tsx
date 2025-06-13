@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 import { Upload, AlertCircle, Loader2, FileText, X } from "lucide-react"
 import { parseJsonFile, extractChatData, combineMultipleChatData, type ParsedChatData } from "@/lib/parse-json"
 import { toast } from "sonner"
-import analyzeMultipleChatFiles from "@/lib/analyze-chat"
+import { analyzeMultipleChatFiles } from "@/lib/analyze-chat"
 
 interface ChatFile {
   file: File
@@ -171,20 +171,14 @@ export default function UploadPage() {
         setCurrentStep("Starting chat analysis with Gemini 2.0 Flash...")
         setOverallProgress(0)
         
-        // Use the analysis function
-        const analysis = await analyzeMultipleChatFiles(successfullyProcessedFiles)
-        
-        // Update progress for each file
-        for (let i = 0; i < successfullyProcessedFiles.length; i++) {
-          const fileProgress = Math.floor(((i + 1) / successfullyProcessedFiles.length) * 100)
-          setOverallProgress(fileProgress)
-          setCurrentStep(`Analyzing file ${i + 1}/${successfullyProcessedFiles.length} (processing in chunks to handle large conversations) - Progress: ${fileProgress}%`)
-          // Add a delay to show progress
-          await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-
-        setOverallProgress(100)
-        setCurrentStep("Analysis complete! Combining results from all chunks - Progress: 100%")
+        // Use the analysis function with progress updates
+        const analysis = await analyzeMultipleChatFiles(
+          successfullyProcessedFiles,
+          (progress: number, status: string) => {
+            setOverallProgress(progress);
+            setCurrentStep(status);
+          }
+        );
 
         // Store the analysis results
         localStorage.setItem("chat-analysis-data", JSON.stringify(analysis))
