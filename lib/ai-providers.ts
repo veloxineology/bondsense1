@@ -4,7 +4,9 @@ import Together from "together-ai";
 
 // Initialize AI providers
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
-const openRouter = new OpenAI({
+
+// Initialize OpenRouter client only if API key is available
+const openRouter = process.env.OPENAI_API_KEY ? new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
   apiKey: process.env.OPENAI_API_KEY,
   defaultHeaders: process.env.NEXT_PUBLIC_SITE_URL ? {
@@ -12,7 +14,8 @@ const openRouter = new OpenAI({
     "X-Title": "Chat Analysis App",
   } : undefined,
   dangerouslyAllowBrowser: true,
-});
+}) : null;
+
 const together = new Together({
   apiKey: process.env.TOGETHER_API_KEY,
 });
@@ -39,9 +42,12 @@ export const providers: AIProvider[] = [
       return result.response.text();
     },
   },
-  ...(process.env.OPENAI_API_KEY ? [{
+  ...(openRouter ? [{
     name: "openrouter",
     analyze: async (prompt: string) => {
+      if (!openRouter) {
+        throw new Error("OpenRouter client is not initialized");
+      }
       const completion = await openRouter.chat.completions.create({
         model: "google/gemini-2.0-flash-exp:free",
         messages: [
