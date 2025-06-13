@@ -76,9 +76,24 @@ export async function analyzeChatData(chatData: any, onProgress?: (progress: num
       const response = await result.response
       const text = response.text()
 
-      // Parse the response
-      const analysis = JSON.parse(text)
-      analyses.push(analysis)
+      // Clean the response text and parse JSON
+      try {
+        // Remove any markdown code block markers and clean the text
+        const cleanedText = text
+          .replace(/```json\n?/g, '') // Remove ```json
+          .replace(/```\n?/g, '') // Remove ```
+          .replace(/`/g, '') // Remove any remaining backticks
+          .trim()
+
+        // Parse the cleaned JSON
+        const analysis = JSON.parse(cleanedText)
+        analyses.push(analysis)
+      } catch (error) {
+        console.error("Error parsing analysis response:", error)
+        console.error("Raw response:", text)
+        const errorMessage = error instanceof Error ? error.message : "Unknown parsing error"
+        throw new Error(`Failed to parse analysis response: ${errorMessage}`)
+      }
 
       // Update progress after each chunk
       const nextChunkProgress = Math.floor(((i + 1) / messageChunks.length) * 100)
