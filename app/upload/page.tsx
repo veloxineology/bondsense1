@@ -140,11 +140,11 @@ export default function UploadPage() {
       if (successfullyProcessedFiles.length === 0) {
         // Generate mock data if no files were successfully processed
         const mockData: ParsedChatData = {
-          participants: ["Tanisha", "Kaushik"],
+          participants: ["Charles Leclerc", "Alexa"],
           messageCount: 100,
           messagesByParticipant: {
-            Tanisha: 45,
-            Kaushik: 55
+            "Charles Leclerc": 45,
+            "Alexa": 55
           },
           timeSpan: {
             start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
@@ -327,11 +327,11 @@ export default function UploadPage() {
                   onClick={() => {
                     // Create mock data with default values
                     const mockData: ParsedChatData = {
-                      participants: ["Tanisha", "Kaushik"],
+                      participants: ["Charles Leclerc", "Alexa"],
                       messageCount: 100,
                       messagesByParticipant: {
-                        Tanisha: 45,
-                        Kaushik: 55
+                        "Charles Leclerc": 45,
+                        "Alexa": 55
                       },
                       timeSpan: {
                         start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
