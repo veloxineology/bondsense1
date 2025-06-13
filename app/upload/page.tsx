@@ -16,6 +16,7 @@ import { Upload, AlertCircle, Loader2, FileText, X } from "lucide-react"
 import { parseJsonFile, extractChatData, combineMultipleChatData, type ParsedChatData } from "@/lib/parse-json"
 // Add the import for validateGeminiApiKey
 import { validateGeminiApiKey } from "@/lib/validate-gemini-api-key"
+import { toast } from "sonner"
 
 interface ChatFile {
   file: File
@@ -29,7 +30,6 @@ export default function UploadPage() {
   const { toast } = useToast()
   const router = useRouter()
   const [files, setFiles] = useState<ChatFile[]>([])
-  const [apiKey, setApiKey] = useState("")
   const [isUploading, setIsUploading] = useState(false)
   const [overallProgress, setOverallProgress] = useState(0)
   const [currentStep, setCurrentStep] = useState("")
@@ -38,15 +38,6 @@ export default function UploadPage() {
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check if API key is set
-    const storedApiKey = localStorage.getItem("gemini-api-key")
-    if (storedApiKey) {
-      setApiKey(storedApiKey)
-    } else {
-      // Redirect to home if no API key
-      router.push("/")
-    }
-
     // Start fade-in animation
     setFadeIn(true)
 
@@ -82,52 +73,10 @@ export default function UploadPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  // Replace the handleUpload function with this implementation:
-
-  const handleUpload = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (files.length === 0) {
-      toast({
-        title: "No files selected",
-        description: "Please select at least one file to upload",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Validate API key first
-    const storedApiKey = localStorage.getItem("gemini-api-key")
-    if (!storedApiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please set your Gemini API key in the settings",
-        variant: "destructive",
-      })
-      router.push("/")
-      return
-    }
-
-    // Verify the API key is valid
-    setCurrentStep("Validating API key...")
-    setOverallProgress(5)
-
-    try {
-      const isValid = await validateGeminiApiKey(storedApiKey)
-      if (!isValid) {
-        toast({
-          title: "Invalid API Key",
-          description: "Your Gemini API key is invalid or has expired. Please update it in settings.",
-          variant: "destructive",
-        })
-        router.push("/settings")
-        return
-      }
-    } catch (error) {
-      console.error("Error validating API key:", error)
-      toast({
-        title: "API Validation Error",
-        description: "Could not validate your API key. Please check your internet connection.",
-        variant: "destructive",
-      })
+      toast.error("Please select at least one file")
       return
     }
 
@@ -203,11 +152,7 @@ export default function UploadPage() {
             ),
           )
 
-          toast({
-            title: "Error processing file",
-            description: `Failed to process ${files[i].file.name}: ${errorMessage}`,
-            variant: "destructive",
-          })
+          toast.error(`Failed to process ${files[i].file.name}: ${errorMessage}`)
         }
       }
 
@@ -242,11 +187,7 @@ export default function UploadPage() {
         // Store the mock data
         localStorage.setItem("chat-analysis-data", JSON.stringify(mockData))
 
-        toast({
-          title: "Using Demo Data",
-          description: "No files were successfully processed. Using demo data for demonstration purposes.",
-          variant: "default",
-        })
+        toast.success("Using Demo Data")
       } else {
         // Combine the real data from successful files
         const combinedData = combineMultipleChatData(successfullyProcessedFiles.map((file) => file.data!))
@@ -255,10 +196,7 @@ export default function UploadPage() {
         // Store the combined data in localStorage for use in analysis pages
         localStorage.setItem("chat-analysis-data", JSON.stringify(combinedData))
 
-        toast({
-          title: "Analysis Complete",
-          description: `Successfully analyzed ${successfullyProcessedFiles.length} file${successfullyProcessedFiles.length > 1 ? "s" : ""}`,
-        })
+        toast.success(`Successfully analyzed ${successfullyProcessedFiles.length} file${successfullyProcessedFiles.length > 1 ? "s" : ""}`)
       }
 
       setOverallProgress(100)
@@ -277,11 +215,7 @@ export default function UploadPage() {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
       setUploadError(errorMessage)
 
-      toast({
-        title: "Analysis Failed",
-        description: `An error occurred during analysis: ${errorMessage}`,
-        variant: "destructive",
-      })
+      toast.error(`An error occurred during analysis: ${errorMessage}`)
     }
   }
 
@@ -428,10 +362,7 @@ export default function UploadPage() {
                     // Store the mock data
                     localStorage.setItem("chat-analysis-data", JSON.stringify(mockData))
 
-                    toast({
-                      title: "Using Demo Data",
-                      description: "Using demo data for demonstration purposes.",
-                    })
+                    toast.success("Using Demo Data")
 
                     // Redirect to analysis page
                     setTimeout(() => {
@@ -455,7 +386,7 @@ export default function UploadPage() {
               Clear All
             </Button>
             <Button
-              onClick={handleUpload}
+              onClick={handleSubmit}
               disabled={isUploading || files.length === 0}
               className="hover:scale-105 transition-transform"
             >

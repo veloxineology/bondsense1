@@ -12,76 +12,33 @@ import { useToast } from "@/components/ui/use-toast"
 import { validateGeminiApiKey } from "@/lib/validate-gemini-api-key"
 import { MainLayout } from "@/components/main-layout"
 import { ArrowRight, Key, MessageSquare, Upload } from "lucide-react"
+import { toast } from "sonner"
 
 export default function Home() {
   const [apiKey, setApiKey] = useState("")
-  const [isValidating, setIsValidating] = useState(false)
-  const [fadeIn, setFadeIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { toast } = useToast()
-
-  useEffect(() => {
-    // Check if API key is already set
-    const storedApiKey = localStorage.getItem("gemini-api-key")
-    if (storedApiKey) {
-      setApiKey(storedApiKey)
-    }
-
-    // Start fade-in animation
-    setFadeIn(true)
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!apiKey.trim()) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Gemini API key",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsValidating(true)
+    setIsLoading(true)
 
     try {
-      // Validate the API key
-      const isValid = await validateGeminiApiKey(apiKey.trim())
-
-      if (isValid) {
-        // Save the API key to localStorage
-        localStorage.setItem("gemini-api-key", apiKey.trim())
-
-        toast({
-          title: "API Key Validated",
-          description: "Your Gemini API key has been validated and saved",
-        })
-
-        // Redirect to upload page
-        router.push("/upload")
-      } else {
-        toast({
-          title: "Invalid API Key",
-          description: "The provided API key is invalid. Please check and try again.",
-          variant: "destructive",
-        })
-      }
+      // Store the API key
+      localStorage.setItem("geminiApiKey", apiKey.trim())
+      toast.success("API key saved successfully!")
+      router.push("/upload")
     } catch (error) {
-      console.error("API key validation error:", error)
-      toast({
-        title: "Validation Error",
-        description: "An error occurred while validating your API key. Please try again.",
-        variant: "destructive",
-      })
+      console.error("Error saving API key:", error)
+      toast.error("Failed to save API key. Please try again.")
     } finally {
-      setIsValidating(false)
+      setIsLoading(false)
     }
   }
 
   return (
     <MainLayout>
-      <div className={`max-w-4xl mx-auto transition-opacity duration-1000 ${fadeIn ? "opacity-100" : "opacity-0"}`}>
+      <div className={`max-w-4xl mx-auto transition-opacity duration-1000`}>
         <div className="flex flex-col items-center text-center mb-8 animate-fade-in">
           <h1 className="text-4xl font-bold mb-4">Chat Analysis App</h1>
           <p className="text-xl text-muted-foreground max-w-2xl">
@@ -102,28 +59,22 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit}>
-                <div className="grid w-full items-center gap-4">
-                  <div className="flex flex-col space-y-1.5">
-                    <Label htmlFor="apiKey">Gemini API Key</Label>
-                    <Input
-                      id="apiKey"
-                      placeholder="Enter your Gemini API key"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      type="password"
-                    />
-                  </div>
-                </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  type="password"
+                  placeholder="Enter your Gemini API key"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  required
+                />
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Saving..." : "Continue"}
+                </Button>
               </form>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button variant="outline" onClick={() => window.open("https://aistudio.google.com/app/apikey", "_blank")}>
                 Get API Key
-              </Button>
-              <Button onClick={handleSubmit} disabled={isValidating || !apiKey.trim()}>
-                {isValidating ? "Validating..." : "Continue"}
-                {!isValidating && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </CardFooter>
           </Card>
