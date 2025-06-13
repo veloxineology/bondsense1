@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ParsedChatData } from "./parse-json";
+import { analyzeWithMultipleProviders, mergeAnalysisResults, providers, type AIProvider } from "./ai-providers";
 
 // Initialize the Google Generative AI with your API key
 const API_KEY = process.env.GOOGLE_AI_API_KEY;
@@ -95,134 +96,179 @@ function combineAnalyses(analyses: AnalysisResult[]): AnalysisResult {
   };
 }
 
+// Rate limiting configuration
+const RATE_LIMITS = {
+  gemini: {
+    requestsPerMinute: 60,
+    delayBetweenRequests: 1000, // 1 second
+  },
+  openrouter: {
+    requestsPerMinute: 30,
+    delayBetweenRequests: 2000, // 2 seconds
+  },
+  together: {
+    requestsPerMinute: 20,
+    delayBetweenRequests: 3000, // 3 seconds
+  },
+};
+
+// Request tracking
+const requestTimestamps: Record<string, number[]> = {
+  gemini: [],
+  openrouter: [],
+  together: [],
+};
+
+// Function to check and wait for rate limits
+async function waitForRateLimit(provider: string): Promise<void> {
+  const now = Date.now();
+  const limit = RATE_LIMITS[provider as keyof typeof RATE_LIMITS];
+  
+  // Remove timestamps older than 1 minute
+  requestTimestamps[provider] = requestTimestamps[provider].filter(
+    (timestamp) => now - timestamp < 60000
+  );
+
+  // If we've hit the rate limit, wait
+  if (requestTimestamps[provider].length >= limit.requestsPerMinute) {
+    const oldestRequest = requestTimestamps[provider][0];
+    const waitTime = 60000 - (now - oldestRequest);
+    if (waitTime > 0) {
+      console.log(`Rate limit reached for ${provider}, waiting ${waitTime}ms`);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
+  }
+
+  // Add current timestamp
+  requestTimestamps[provider].push(now);
+  
+  // Wait for minimum delay between requests
+  await new Promise((resolve) => setTimeout(resolve, limit.delayBetweenRequests));
+}
+
+// Function to split messages into chunks based on token count
+function splitIntoChunks(messages: Message[], maxTokensPerChunk: number = 1000): Message[][] {
+  const chunks: Message[][] = [];
+  let currentChunk: Message[] = [];
+  let currentTokenCount = 0;
+
+  for (const message of messages) {
+    // Rough token estimation (4 characters ≈ 1 token)
+    const messageTokens = Math.ceil((message.content?.length || 0) / 4);
+    
+    if (currentTokenCount + messageTokens > maxTokensPerChunk && currentChunk.length > 0) {
+      chunks.push(currentChunk);
+      currentChunk = [];
+      currentTokenCount = 0;
+    }
+    
+    currentChunk.push(message);
+    currentTokenCount += messageTokens;
+  }
+
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+}
+
 export async function analyzeChatData(
-  data: string,
-  onProgress: (progress: number, status: string) => void = () => {}
+  chatData: ParsedChatData
 ): Promise<AnalysisResult> {
-  const parsedData = JSON.parse(data) as ParsedChatData;
+  console.log("Starting chat analysis...");
+  console.log("API Keys present:", {
+    gemini: !!process.env.GOOGLE_AI_API_KEY,
+    openrouter: !!process.env.OPENROUTER_API_KEY,
+    together: !!process.env.TOGETHER_API_KEY,
+  });
+
+  if (!process.env.GOOGLE_AI_API_KEY && !process.env.OPENROUTER_API_KEY && !process.env.TOGETHER_API_KEY) {
+    throw new Error(
+      "No AI API keys found. Please set at least one of: GOOGLE_AI_API_KEY, OPENROUTER_API_KEY, or TOGETHER_API_KEY in your environment variables."
+    );
+  }
+
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const maxRetries = 3;
-    const retryDelay = 5000; // 5 seconds
-    const requestDelay = 6000; // 6 seconds between requests to stay well under rate limit
+    // Split messages into chunks based on token count
+    const chunks = splitIntoChunks(chatData.messages);
+    console.log(`Split chat into ${chunks.length} chunks`);
 
-    const chunkMessages = (messages: Message[], chunkSize: number = 30) => { // Reduced chunk size
-      const chunks: Message[][] = [];
-      for (let i = 0; i < messages.length; i += chunkSize) {
-        chunks.push(messages.slice(i, i + chunkSize));
-      }
-      return chunks;
-    };
-
-    const chunks = chunkMessages(parsedData.textMessages);
-    const analyses: AnalysisResult[] = [];
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      let retryCount = 0;
-      let success = false;
-
-      while (!success && retryCount < maxRetries) {
-        try {
-          const chunkProgress = Math.floor((i / chunks.length) * 100);
-          const nextChunkProgress = Math.floor(((i + 1) / chunks.length) * 100);
-          
-          onProgress(chunkProgress, `Analyzing chunk ${i + 1} of ${chunks.length}...`);
-
-          // Add delay before each request
-          await new Promise(resolve => setTimeout(resolve, requestDelay));
-
-          const prompt = `Analyze this chat data and provide insights in JSON format. Focus on communication patterns, emotional dynamics, and relationship insights. Here's the data:
+    const chunkResults = await Promise.all(
+      chunks.map(async (chunk: Message[], index: number) => {
+        console.log(`Processing chunk ${index + 1}/${chunks.length}`);
+        const prompt = `Analyze this chat data and provide insights in JSON format. Focus on communication patterns, emotional dynamics, and relationship insights. Here's the data:
 
 ${JSON.stringify(chunk, null, 2)}
 
-Provide the analysis in this exact JSON format:
+IMPORTANT: Your response must be a valid JSON object with EXACTLY this structure:
 {
   "descriptive": {
-    "personality_summary_sender": "string",
-    "personality_summary_receiver": "string",
-    "communication_style": "string",
-    "emotional_dynamics": "string",
-    "relationship_health": "string",
-    "togetherness_outlook": "string",
-    "relationship_growth_potential": "string",
-    "long_term_stability_prediction": "string",
-    "communication_style_description": "string",
-    "emotional_depth_description": "string"
+    "personality_summary_sender": "string describing sender's personality",
+    "personality_summary_receiver": "string describing receiver's personality",
+    "communication_style": "string describing their communication style",
+    "emotional_dynamics": "string describing emotional dynamics",
+    "relationship_health": "string describing relationship health",
+    "togetherness_outlook": "string describing future togetherness",
+    "relationship_growth_potential": "string describing growth potential",
+    "long_term_stability_prediction": "string describing stability",
+    "communication_style_description": "string describing communication",
+    "emotional_depth_description": "string describing emotional depth"
   },
   "quantitative": {
-    "message_frequency": number,
-    "response_time_avg": number,
+    "message_frequency": number between 0 and 100,
+    "response_time_avg": number between 0 and 100,
     "emotion_scores": {
-      "positive": number,
-      "negative": number,
-      "neutral": number
+      "positive": number between 0 and 100,
+      "negative": number between 0 and 100,
+      "neutral": number between 0 and 100
     },
-    "emotional_intimacy": number,
-    "trust_level": number,
-    "mutual_care": number,
-    "consistency_in_attention": number,
-    "emotional_vulnerability": number
+    "emotional_intimacy": number between 0 and 100,
+    "trust_level": number between 0 and 100,
+    "mutual_care": number between 0 and 100,
+    "consistency_in_attention": number between 0 and 100,
+    "emotional_vulnerability": number between 0 and 100
   }
-}`;
+}
 
-          const result = await model.generateContent(prompt);
-          const text = result.response.text();
-          
-          // Clean the response text and parse JSON
-          try {
-            // Remove any markdown code block markers and clean the text
-            const cleanedText = text
-              .replace(/```json\n?/g, '') // Remove ```json
-              .replace(/```\n?/g, '') // Remove ```
-              .replace(/`/g, '') // Remove any remaining backticks
-              .trim()
+DO NOT include any text before or after the JSON object. The response must be a single, valid JSON object.`;
 
-            // Parse the cleaned JSON
-            const analysis = JSON.parse(cleanedText) as AnalysisResult;
-            analyses.push(analysis);
-            success = true;
-          } catch (error) {
-            console.error("Error parsing analysis response:", error);
-            console.error("Raw response:", text);
-            const errorMessage = error instanceof Error ? error.message : "Unknown parsing error";
-            throw new Error(`Failed to parse analysis response: ${errorMessage}`);
-          }
+        // Get results from multiple providers with rate limiting
+        const results = await Promise.all(
+          providers.map(async (provider: AIProvider) => {
+            await waitForRateLimit(provider.name);
+            try {
+              return await provider.analyze(prompt);
+            } catch (error) {
+              console.error(`Error with ${provider.name}:`, error);
+              return null;
+            }
+          })
+        );
 
-          onProgress(nextChunkProgress, `Completed chunk ${i + 1} of ${chunks.length}`);
-        } catch (error) {
-          retryCount++;
-          const isModelOverloaded = error instanceof Error && 
-            error.message.includes('503') && 
-            error.message.includes('overloaded');
+        // Filter out failed results
+        const validResults = results.filter((result: string | null): result is string => result !== null);
+        console.log(`Got ${validResults.length} valid results for chunk ${index + 1}`);
 
-          if (isModelOverloaded && retryCount < maxRetries) {
-            const backoffDelay = retryDelay * Math.pow(2, retryCount - 1); // Exponential backoff
-            console.log(`Model overloaded, retrying in ${backoffDelay/1000} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, backoffDelay));
-            continue;
-          }
-
-          if (retryCount === maxRetries) {
-            throw new Error(`Failed to analyze chunk after ${maxRetries} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-
-          throw error;
+        if (validResults.length === 0) {
+          throw new Error(`No valid results for chunk ${index + 1}`);
         }
-      }
-    }
 
-    onProgress(100, "Analysis complete");
-    return combineAnalyses(analyses);
+        // Merge the results
+        const mergedResult = mergeAnalysisResults(validResults);
+        console.log(`Successfully merged results for chunk ${index + 1}`);
+
+        return mergedResult;
+      })
+    );
+
+    // Combine all chunk results
+    const finalResult = combineAnalyses(chunkResults);
+    console.log("Successfully combined all chunk results");
+
+    return finalResult;
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes("403") && error.message.includes("unregistered callers")) {
-        throw new Error("API key is invalid or not properly configured. Please check your GOOGLE_AI_API_KEY environment variable.");
-      }
-      if (error.message.includes("API key")) {
-        throw new Error("API key error: " + error.message);
-      }
-    }
+    console.error("Error in analyzeChatData:", error);
     throw error;
   }
 }
@@ -241,10 +287,7 @@ export async function analyzeMultipleChatFiles(
     onProgress(fileProgress, `Processing file ${i + 1} of ${files.length}...`);
 
     try {
-      const analysis = await analyzeChatData(JSON.stringify(file.data), (progress, status) => {
-        const overallProgress = Math.floor((fileProgress + (progress / files.length)));
-        onProgress(overallProgress, status || `Processing file ${i + 1}...`);
-      });
+      const analysis = await analyzeChatData(file.data);
       analyses.push(analysis);
     } catch (error) {
       console.error(`Error analyzing file ${i + 1}:`, error);
@@ -253,4 +296,4 @@ export async function analyzeMultipleChatFiles(
   }
 
   return combineAnalyses(analyses);
-} 
+}
