@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DescriptiveInsight } from "./relationship-analysis/descriptive-insight"
+import { DescriptiveInsight } from "@/components/relationship-analysis/descriptive-insight"
 import { Heart, Brain, MessageCircle, TrendingUp, Users, Sparkles, Target } from "lucide-react"
 
 interface MessageDistribution {
