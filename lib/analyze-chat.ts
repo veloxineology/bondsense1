@@ -58,16 +58,16 @@ export default async function analyzeChatWithGemini(chatData: string): Promise<A
           daydreaming_references: 70
         },
         descriptive: {
-          personality_summary_sender: "Using mock data for Charles Leclerc. API key not working. Please check your API key.",
-          personality_summary_receiver: "Using mock data for Alexa. API key not working. Please check your API key.",
-          togetherness_outlook: "Using mock data. API key not working. Please check your API key.",
-          communication_style_description: "Using mock data. API key not working. Please check your API key.",
-          emotional_depth_description: "Using mock data. API key not working. Please check your API key.",
-          intellectual_connection_description: "Using mock data. API key not working. Please check your API key.",
-          relationship_growth_potential: "Using mock data. API key not working. Please check your API key.",
-          long_term_stability_prediction: "Using mock data. API key not working. Please check your API key.",
-          dependency_balance_description: "Using mock data. API key not working. Please check your API key.",
-          friendship_layer_strength: "Using mock data. API key not working. Please check your API key."
+          personality_summary_sender: "Using mock data for Charles Leclerc. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          personality_summary_receiver: "Using mock data for Alexa. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          togetherness_outlook: "Using mock data. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          communication_style_description: "Using mock data. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          emotional_depth_description: "Using mock data. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          intellectual_connection_description: "Using mock data. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          relationship_growth_potential: "Using mock data. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          long_term_stability_prediction: "Using mock data. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          dependency_balance_description: "Using mock data. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438",
+          friendship_layer_strength: "Using mock data. API key not working. Please check your API key: AIzaSyBVMzmmDuO_6ujaj8TGVkt2EZqa6qz2438"
         }
       }
     }
