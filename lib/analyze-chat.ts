@@ -12,7 +12,59 @@ interface ChatData {
   messages: ChatMessage[]
 }
 
-export async function analyzeChatWithGemini(chatData: string) {
+export interface AnalysisResult {
+  quantitative: {
+    emotional_intimacy: number
+    emotional_vulnerability: number
+    emotional_balance: number
+    romantic_affection: number
+    emotional_mirroring: number
+    expressions_of_missing_or_longing: number
+    feeling_of_home: number
+    emotional_dependency: number
+    empathy_signals: number
+    trust_level: number
+    sense_of_security: number
+    disclosure_depth: number
+    willingness_to_reconcile: number
+    respect_level: number
+    tone_consistency: number
+    love_language_alignment: number
+    nickname_frequency: number
+    inside_jokes_present: number
+    long_message_ratio: number
+    response_speed: number
+    frequency_of_check_ins: number
+    future_commitment_signals: number
+    imagining_shared_future: number
+    planning_together: number
+    sacrifices_mentioned: number
+    mutual_care: number
+    consistency_in_attention: number
+    care_in_small_details: number
+    message_prioritization: number
+    expressed_needs: number
+    attention_to_mood_swings: number
+    effort_reciprocity: number
+    playfulness: number
+    conflict_handling: number
+    daydreaming_references: number
+  }
+  descriptive: {
+    personality_summary_sender: string
+    personality_summary_receiver: string
+    togetherness_outlook: string
+    communication_style_description: string
+    emotional_depth_description: string
+    intellectual_connection_description: string
+    relationship_growth_potential: string
+    long_term_stability_prediction: string
+    dependency_balance_description: string
+    friendship_layer_strength: string
+  }
+}
+
+export async function analyzeChatWithGemini(chatData: string): Promise<AnalysisResult> {
   try {
     // Get API key from localStorage
     const apiKey = localStorage.getItem("gemini-api-key")
@@ -105,7 +157,7 @@ export async function analyzeChatWithGemini(chatData: string) {
 
     // Parse the response
     try {
-      const analysis = JSON.parse(text)
+      const analysis = JSON.parse(text) as AnalysisResult
       return analysis
     } catch (parseError) {
       console.error("Error parsing Gemini response:", parseError)
