@@ -16,57 +16,78 @@ interface ChatData {
 // Initialize the Google Generative AI with your API key
 const genAI = new GoogleGenerativeAI("AIzaSyAdRc52V5BRqC-JOxzBxHlyAS9xw_O2hUg")
 
+// Function to chunk messages into smaller parts
+function chunkMessages(messages: any[], chunkSize: number = 100) {
+  const chunks = []
+  for (let i = 0; i < messages.length; i += chunkSize) {
+    chunks.push(messages.slice(i, i + chunkSize))
+  }
+  return chunks
+}
+
 // Function to analyze chat data using Gemini
 export async function analyzeChatData(chatData: any, onProgress?: (progress: number) => void) {
   try {
     // Get the Gemini 2.0 Flash model
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
 
-    // Prepare the prompt for analysis
-    const prompt = `Analyze this chat data and provide insights about the relationship between the participants. 
-    Focus on communication patterns, emotional dynamics, and overall relationship health.
-    Format the response as a JSON object with the following structure:
-    {
-      "descriptive": {
-        "personality_summary_sender": "string",
-        "personality_summary_receiver": "string",
-        "communication_style": "string",
-        "emotional_dynamics": "string",
-        "relationship_health": "string"
-      },
-      "quantitative": {
-        "message_frequency": number,
-        "response_time_avg": number,
-        "emotion_scores": {
-          "positive": number,
-          "negative": number,
-          "neutral": number
+    // Split messages into chunks
+    const messageChunks = chunkMessages(chatData.messages)
+    const analyses = []
+
+    // Process each chunk
+    for (let i = 0; i < messageChunks.length; i++) {
+      const chunk = messageChunks[i]
+      const chunkProgress = (i / messageChunks.length) * 100
+      onProgress?.(chunkProgress)
+
+      // Prepare the prompt for analysis
+      const prompt = `Analyze this portion of chat data and provide insights about the relationship between the participants. 
+      Focus on communication patterns, emotional dynamics, and overall relationship health.
+      Format the response as a JSON object with the following structure:
+      {
+        "descriptive": {
+          "personality_summary_sender": "string",
+          "personality_summary_receiver": "string",
+          "communication_style": "string",
+          "emotional_dynamics": "string",
+          "relationship_health": "string"
+        },
+        "quantitative": {
+          "message_frequency": number,
+          "response_time_avg": number,
+          "emotion_scores": {
+            "positive": number,
+            "negative": number,
+            "neutral": number
+          }
         }
       }
+
+      Chat Data (Chunk ${i + 1}/${messageChunks.length}):
+      ${JSON.stringify({
+        participants: chatData.participants,
+        messages: chunk
+      }, null, 2)}`
+
+      // Generate content with a delay to respect rate limits
+      await new Promise(resolve => setTimeout(resolve, 4000)) // 4 second delay between requests
+      const result = await model.generateContent(prompt)
+      const response = await result.response
+      const text = response.text()
+
+      // Parse the response
+      const analysis = JSON.parse(text)
+      analyses.push(analysis)
     }
 
-    Chat Data:
-    ${JSON.stringify(chatData, null, 2)}`
+    // Combine all chunk analyses
+    const combinedAnalysis = combineAnalyses(analyses)
 
-    // Update progress to 20%
-    onProgress?.(20)
-
-    // Generate content with a delay to respect rate limits
-    await new Promise(resolve => setTimeout(resolve, 4000)) // 4 second delay between requests
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    const text = response.text()
-
-    // Update progress to 80%
-    onProgress?.(80)
-
-    // Parse the response
-    const analysis = JSON.parse(text)
-
-    // Update progress to 100%
+    // Update final progress
     onProgress?.(100)
 
-    return analysis
+    return combinedAnalysis
   } catch (error) {
     console.error("Error analyzing chat data:", error)
     throw error

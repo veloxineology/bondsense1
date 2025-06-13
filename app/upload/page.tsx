@@ -178,13 +178,13 @@ export default function UploadPage() {
         for (let i = 0; i < successfullyProcessedFiles.length; i++) {
           const fileProgress = ((i + 1) / successfullyProcessedFiles.length) * 100
           setOverallProgress(fileProgress)
-          setCurrentStep(`Analyzing file ${i + 1}/${successfullyProcessedFiles.length}...`)
+          setCurrentStep(`Analyzing file ${i + 1}/${successfullyProcessedFiles.length} (processing in chunks to handle large conversations)...`)
           // Add a delay to show progress
           await new Promise(resolve => setTimeout(resolve, 1000))
         }
 
         setOverallProgress(100)
-        setCurrentStep("Analysis complete! Preparing results...")
+        setCurrentStep("Analysis complete! Combining results from all chunks...")
 
         // Store the analysis results
         localStorage.setItem("chat-analysis-data", JSON.stringify(analysis))
