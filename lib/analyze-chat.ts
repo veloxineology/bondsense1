@@ -58,16 +58,16 @@ export default async function analyzeChatWithGemini(chatData: string): Promise<A
           daydreaming_references: 70
         },
         descriptive: {
-          personality_summary_sender: "Mock personality summary for sender",
-          personality_summary_receiver: "Mock personality summary for receiver",
-          togetherness_outlook: "Mock togetherness outlook",
-          communication_style_description: "Mock communication style description",
-          emotional_depth_description: "Mock emotional depth description",
-          intellectual_connection_description: "Mock intellectual connection description",
-          relationship_growth_potential: "Mock relationship growth potential",
-          long_term_stability_prediction: "Mock long-term stability prediction",
-          dependency_balance_description: "Mock dependency balance description",
-          friendship_layer_strength: "Mock friendship layer strength"
+          personality_summary_sender: "API key not working. Please check your API key.",
+          personality_summary_receiver: "API key not working. Please check your API key.",
+          togetherness_outlook: "API key not working. Please check your API key.",
+          communication_style_description: "API key not working. Please check your API key.",
+          emotional_depth_description: "API key not working. Please check your API key.",
+          intellectual_connection_description: "API key not working. Please check your API key.",
+          relationship_growth_potential: "API key not working. Please check your API key.",
+          long_term_stability_prediction: "API key not working. Please check your API key.",
+          dependency_balance_description: "API key not working. Please check your API key.",
+          friendship_layer_strength: "API key not working. Please check your API key."
         }
       }
     }
