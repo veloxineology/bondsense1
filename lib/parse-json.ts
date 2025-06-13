@@ -2,25 +2,33 @@ interface Participant {
   name: string
 }
 
+interface Photo {
+  uri: string
+}
+
+interface AudioFile {
+  uri: string
+  creation_timestamp: number
+}
+
+interface Share {
+  link: string
+  share_text: string
+  original_content_owner: string
+}
+
 interface Message {
-  sender_name?: string
-  timestamp_ms?: number
+  sender_name: string
+  timestamp_ms: number
   content?: string
-  photos?: any[]
-  videos?: any[]
-  audio_files?: any[]
-  sticker?: any
-  reactions?: any[]
-  is_geoblocked_for_viewer?: boolean
-  // Additional fields that might be in Instagram exports
-  type?: string
-  users?: any[]
-  conversation?: any
+  photos?: Photo[]
+  audio_files?: AudioFile[]
+  share?: Share
 }
 
 interface ChatData {
   participants?: Participant[]
-  messages?: Message[]
+  messages: Message[]
   title?: string
   // Additional fields that might be in Instagram exports
   thread_path?: string
@@ -41,6 +49,9 @@ export interface ParsedChatData {
     durationDays: number
   }
   averageMessagesPerDay: number
+  messages: Message[] // All messages including photos, audio, reels, and shares
+  textMessages: Message[] // Only messages with text content for analysis
+  mediaMessages: Message[] // Messages containing photos, audio, or shares
 }
 
 export async function parseJsonFile(file: File): Promise<ChatData> {
@@ -55,6 +66,11 @@ export async function parseJsonFile(file: File): Promise<ChatData> {
 
         const jsonData = JSON.parse(jsonText)
         console.log(`Parsed JSON structure:`, Object.keys(jsonData))
+
+        // Ensure we have the messages array
+        if (!jsonData.messages || !Array.isArray(jsonData.messages)) {
+          throw new Error("Invalid JSON format: messages array not found")
+        }
 
         resolve(jsonData)
       } catch (error) {
@@ -75,45 +91,20 @@ export async function parseJsonFile(file: File): Promise<ChatData> {
 export function extractChatData(chatData: ChatData): ParsedChatData {
   console.log("Extracting chat data from:", chatData)
 
-  // Handle missing or empty data with defaults
-  if (!chatData) {
-    throw new Error("No chat data provided")
+  if (!chatData || !chatData.messages || !Array.isArray(chatData.messages)) {
+    throw new Error("Invalid chat data format")
   }
 
-  // Extract participants or use default names
-  let participants: string[] = []
-
-  // Try different participant structures that might be in Instagram exports
-  if (chatData.participants && Array.isArray(chatData.participants) && chatData.participants.length > 0) {
-    console.log("Found participants array:", chatData.participants)
-    participants = chatData.participants.map((p) => p.name || "Unknown User")
-  } else if (chatData.users && Array.isArray(chatData.users) && chatData.users.length > 0) {
-    console.log("Found users array:", chatData.users)
-    participants = chatData.users.map((u: any) => u.name || u.username || "Unknown User")
-  } else if (chatData.conversation && chatData.conversation.participants) {
-    console.log("Found conversation participants:", chatData.conversation.participants)
-    participants = chatData.conversation.participants.map((p: any) => p.name || "Unknown User")
-  } else {
-    // Try to extract participant names from messages if participants array is not available
-    console.log("No direct participants found, extracting from messages")
-    const messages = chatData.messages || []
-    const uniqueSenders = new Set<string>()
-
-    messages.forEach((message) => {
-      if (message.sender_name) {
-        uniqueSenders.add(message.sender_name)
-      }
-    })
-
-    participants = Array.from(uniqueSenders)
-    console.log("Extracted participants from messages:", participants)
-
-    // If still no participants found, use default names
-    if (participants.length === 0) {
-      console.log("No participants found, using defaults")
-      participants = ["User 1", "User 2"]
+  // Extract unique participants from messages
+  const uniqueSenders = new Set<string>()
+  chatData.messages.forEach((message) => {
+    if (message.sender_name) {
+      uniqueSenders.add(message.sender_name)
     }
-  }
+  })
+
+  const participants = Array.from(uniqueSenders)
+  console.log("Extracted participants:", participants)
 
   // Count messages by participant
   const messagesByParticipant: Record<string, number> = {}
@@ -122,8 +113,12 @@ export function extractChatData(chatData: ChatData): ParsedChatData {
   })
 
   // Process messages
-  const messages = chatData.messages || []
+  const messages = chatData.messages
   console.log(`Processing ${messages.length} messages`)
+
+  // Separate text and media messages
+  const textMessages = messages.filter(message => message.content && !message.share)
+  const mediaMessages = messages.filter(message => message.photos || message.audio_files || message.share)
 
   messages.forEach((message) => {
     if (message.sender_name && messagesByParticipant[message.sender_name] !== undefined) {
@@ -163,6 +158,9 @@ export function extractChatData(chatData: ChatData): ParsedChatData {
       durationDays,
     },
     averageMessagesPerDay,
+    messages, // All messages including photos, audio, reels, and shares
+    textMessages, // Only messages with text content for analysis
+    mediaMessages // Messages containing photos, audio, or shares
   }
 
   console.log("Extracted chat data:", result)
@@ -173,18 +171,7 @@ export function combineMultipleChatData(parsedDataArray: ParsedChatData[]): Pars
   console.log(`Combining ${parsedDataArray.length} chat data objects`)
 
   if (parsedDataArray.length === 0) {
-    // Return default data structure if no data is available
-    return {
-      participants: ["User 1", "User 2"],
-      messageCount: 0,
-      messagesByParticipant: { "User 1": 0, "User 2": 0 },
-      timeSpan: {
-        start: new Date(),
-        end: new Date(),
-        durationDays: 1,
-      },
-      averageMessagesPerDay: 0,
-    }
+    throw new Error("No chat data to combine")
   }
 
   if (parsedDataArray.length === 1) {
@@ -208,20 +195,31 @@ export function combineMultipleChatData(parsedDataArray: ParsedChatData[]): Pars
     messagesByParticipant[name] = 0
   })
 
+  // Combine all messages
+  const allMessages: Message[] = []
+  const allTextMessages: Message[] = []
+  const allMediaMessages: Message[] = []
   let totalMessages = 0
 
   parsedDataArray.forEach((data) => {
     totalMessages += data.messageCount
+    allMessages.push(...data.messages)
+    allTextMessages.push(...data.textMessages)
+    allMediaMessages.push(...data.mediaMessages)
 
     Object.entries(data.messagesByParticipant).forEach(([name, count]) => {
       if (messagesByParticipant[name] !== undefined) {
         messagesByParticipant[name] += count
       } else {
-        // Handle case where a participant might be in one file but not in the initial set
         messagesByParticipant[name] = count
       }
     })
   })
+
+  // Sort messages by timestamp
+  allMessages.sort((a, b) => a.timestamp_ms - b.timestamp_ms)
+  allTextMessages.sort((a, b) => a.timestamp_ms - b.timestamp_ms)
+  allMediaMessages.sort((a, b) => a.timestamp_ms - b.timestamp_ms)
 
   // Find overall time span
   const allStartTimes = parsedDataArray.map((data) => data.timeSpan.start.getTime())
@@ -246,6 +244,9 @@ export function combineMultipleChatData(parsedDataArray: ParsedChatData[]): Pars
       durationDays: overallDurationDays,
     },
     averageMessagesPerDay: overallAverageMessagesPerDay,
+    messages: allMessages, // All messages including photos, audio, reels, and shares
+    textMessages: allTextMessages, // Only messages with text content for analysis
+    mediaMessages: allMediaMessages // Messages containing photos, audio, or shares
   }
 
   console.log("Combined chat data:", result)
