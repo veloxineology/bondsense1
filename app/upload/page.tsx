@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 import { Upload, AlertCircle, Loader2, FileText, X } from "lucide-react"
 import { parseJsonFile, extractChatData, combineMultipleChatData, type ParsedChatData } from "@/lib/parse-json"
 import { toast } from "sonner"
-import { analyzeMultipleChatFiles } from "@/lib/analyze-chat"
+import { analyzeMultipleChatFiles } from "@/lib/chat-analysis"
 
 interface ChatFile {
   file: File

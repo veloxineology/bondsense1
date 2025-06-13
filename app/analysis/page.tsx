@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MessageSquareText, Download, Share2, AlertCircle } from "lucide-react"
 import RelationshipAnalysis from "@/components/relationship-analysis"
-import analyzeChatWithGemini, { type AnalysisResult } from "@/lib/analyze-chat"
+import { analyzeChatData, type AnalysisResult } from "@/lib/chat-analysis"
 import { type ParsedChatData, formatDateRange } from "@/lib/parse-json"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import ChatAnalysis from "@/components/chat-analysis"
@@ -42,7 +42,9 @@ export default function AnalysisPage() {
 
   const analyzeChat = async (data: ParsedChatData) => {
     try {
-      const result = await analyzeChatWithGemini(JSON.stringify(data))
+      const result = await analyzeChatData(JSON.stringify(data), (progress: number, status: string) => {
+        console.log(`Progress: ${progress}% - ${status}`);
+      });
       setAnalysisData(result)
       setIsLoading(false)
     } catch (error) {

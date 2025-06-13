@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Heart, Download, Share2, AlertCircle } from "lucide-react"
 import RelationshipAnalysis from "@/components/relationship-analysis"
-import analyzeChatWithGemini from "@/lib/analyze-chat"
-import type { AnalysisResult } from "@/lib/types"
+import { analyzeChatData, type AnalysisResult } from "@/lib/chat-analysis"
 import { useRouter } from "next/navigation"
 import { type ParsedChatData, formatDateRange } from "@/lib/parse-json"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -28,7 +27,7 @@ export default function InsightsPage() {
     try {
       // In a real app, you would send the chat data to the Gemini API
       // For now, we'll use mock data but with real participant names
-      const result = await analyzeChatWithGemini(JSON.stringify(data))
+      const result = await analyzeChatData(JSON.stringify(data))
 
       // Customize the mock data with real participant names
       if (data.participants.length >= 2) {
