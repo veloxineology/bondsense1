@@ -64,7 +64,7 @@ export interface AnalysisResult {
   }
 }
 
-export async function analyzeChatWithGemini(chatData: string): Promise<AnalysisResult> {
+export default async function analyzeChatWithGemini(chatData: string): Promise<AnalysisResult> {
   try {
     // Get API key from localStorage
     const apiKey = localStorage.getItem("gemini-api-key")
