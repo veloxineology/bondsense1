@@ -5,16 +5,18 @@ import Together from "together-ai";
 // Initialize AI providers
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
 
-// Initialize OpenRouter client only if API key is available
-const openRouter = process.env.OPENAI_API_KEY ? new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENAI_API_KEY,
-  defaultHeaders: process.env.NEXT_PUBLIC_SITE_URL ? {
-    "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL,
-    "X-Title": "Chat Analysis App",
-  } : undefined,
-  dangerouslyAllowBrowser: true,
-}) : null;
+// Initialize OpenRouter client only on server side
+let openRouter: OpenAI | null = null;
+if (typeof window === 'undefined' && process.env.OPENAI_API_KEY) {
+  openRouter = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENAI_API_KEY,
+    defaultHeaders: process.env.NEXT_PUBLIC_SITE_URL ? {
+      "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL,
+      "X-Title": "Chat Analysis App",
+    } : undefined,
+  });
+}
 
 const together = new Together({
   apiKey: process.env.TOGETHER_API_KEY,
@@ -48,39 +50,49 @@ export const providers: AIProvider[] = [
       if (!openRouter) {
         throw new Error("OpenRouter client is not initialized");
       }
-      const completion = await openRouter.chat.completions.create({
-        model: "google/gemini-2.0-flash-exp:free",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      });
-      const content = completion.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error("No content received from OpenRouter");
+      try {
+        const completion = await openRouter.chat.completions.create({
+          model: "google/gemini-2.0-flash-exp:free",
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        });
+        const content = completion.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error("No content received from OpenRouter");
+        }
+        return content;
+      } catch (error) {
+        console.error("OpenRouter API error:", error);
+        throw new Error(`OpenRouter API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-      return content;
     },
   }] : []),
   ...(process.env.TOGETHER_API_KEY ? [{
     name: "together",
     analyze: async (prompt: string) => {
-      const response = await together.chat.completions.create({
-        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      });
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error("No content received from Together AI");
+      try {
+        const response = await together.chat.completions.create({
+          model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        });
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error("No content received from Together AI");
+        }
+        return content;
+      } catch (error) {
+        console.error("Together AI API error:", error);
+        throw new Error(`Together AI API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-      return content;
     },
   }] : []),
 ];
