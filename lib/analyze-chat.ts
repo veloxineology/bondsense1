@@ -18,7 +18,58 @@ export default async function analyzeChatWithGemini(chatData: string): Promise<A
     // Get API key from localStorage
     const apiKey = localStorage.getItem("gemini-api-key")
     if (!apiKey) {
-      throw new Error("API key not found")
+      console.warn("API key not found, using mock data")
+      return {
+        quantitative: {
+          emotional_intimacy: 80,
+          emotional_vulnerability: 70,
+          emotional_balance: 75,
+          romantic_affection: 85,
+          emotional_mirroring: 80,
+          expressions_of_missing_or_longing: 75,
+          feeling_of_home: 80,
+          emotional_dependency: 70,
+          empathy_signals: 85,
+          trust_level: 80,
+          sense_of_security: 75,
+          disclosure_depth: 70,
+          willingness_to_reconcile: 80,
+          respect_level: 85,
+          tone_consistency: 80,
+          love_language_alignment: 75,
+          nickname_frequency: 70,
+          inside_jokes_present: 80,
+          long_message_ratio: 75,
+          response_speed: 80,
+          frequency_of_check_ins: 70,
+          future_commitment_signals: 85,
+          imagining_shared_future: 80,
+          planning_together: 75,
+          sacrifices_mentioned: 70,
+          mutual_care: 85,
+          consistency_in_attention: 80,
+          care_in_small_details: 75,
+          message_prioritization: 80,
+          expressed_needs: 70,
+          attention_to_mood_swings: 75,
+          effort_reciprocity: 80,
+          playfulness: 85,
+          conflict_handling: 75,
+          daydreaming_references: 70
+        },
+        descriptive: {
+          personality_summary_sender: "Mock personality summary for sender",
+          personality_summary_receiver: "Mock personality summary for receiver",
+          togetherness_outlook: "Mock togetherness outlook",
+          communication_style_description: "Mock communication style description",
+          emotional_depth_description: "Mock emotional depth description",
+          intellectual_connection_description: "Mock intellectual connection description",
+          relationship_growth_potential: "Mock relationship growth potential",
+          long_term_stability_prediction: "Mock long-term stability prediction",
+          dependency_balance_description: "Mock dependency balance description",
+          friendship_layer_strength: "Mock friendship layer strength"
+        }
+      }
     }
 
     // Parse the chat data
