@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Heart, Download, Share2, AlertCircle } from "lucide-react"
 import RelationshipAnalysis from "@/components/relationship-analysis"
-import { analyzeChatWithGemini } from "@/lib/analyze-chat"
+import analyzeChatWithGemini from "@/lib/analyze-chat"
+import type { AnalysisResult } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { type ParsedChatData, formatDateRange } from "@/lib/parse-json"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -15,7 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 export default function InsightsPage() {
   const router = useRouter()
   const [chatData, setChatData] = useState<ParsedChatData | null>(null)
-  const [analysisData, setAnalysisData] = useState<any>(null)
+  const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
   const [fadeIn, setFadeIn] = useState(false)
@@ -92,63 +93,63 @@ export default function InsightsPage() {
 
   // Filter data based on active tab
   const getFilteredData = () => {
-    if (!analysisData) return null
-
+    if (!analysisData) return null;
+    const { quantitative, descriptive } = analysisData;
     switch (activeTab) {
       case "overview":
         return {
           quantitative: {
-            emotional_intimacy: analysisData.quantitative.emotional_intimacy,
-            trust_level: analysisData.quantitative.trust_level,
-            mutual_care: analysisData.quantitative.mutual_care,
-            consistency_in_attention: analysisData.quantitative.consistency_in_attention,
-            emotional_vulnerability: analysisData.quantitative.emotional_vulnerability,
-            future_commitment_signals: analysisData.quantitative.future_commitment_signals,
-            emotional_balance: analysisData.quantitative.emotional_balance,
-            sense_of_security: analysisData.quantitative.sense_of_security,
+            emotional_intimacy: quantitative.emotional_intimacy,
+            trust_level: quantitative.trust_level,
+            mutual_care: quantitative.mutual_care,
+            consistency_in_attention: quantitative.consistency_in_attention,
+            emotional_vulnerability: quantitative.emotional_vulnerability,
+            future_commitment_signals: quantitative.future_commitment_signals,
+            emotional_balance: quantitative.emotional_balance,
+            sense_of_security: quantitative.sense_of_security,
           },
           descriptive: {
-            togetherness_outlook: analysisData.descriptive.togetherness_outlook,
-            personality_summary_sender: analysisData.descriptive.personality_summary_sender,
-            personality_summary_receiver: analysisData.descriptive.personality_summary_receiver,
-            communication_style_description: analysisData.descriptive.communication_style_description,
+            togetherness_outlook: descriptive.togetherness_outlook,
+            personality_summary_sender: descriptive.personality_summary_sender,
+            personality_summary_receiver: descriptive.personality_summary_receiver,
+            communication_style_description: descriptive.communication_style_description,
           },
-        }
+        };
       case "compatibility":
         return {
           quantitative: {
-            love_language_alignment: analysisData.quantitative.love_language_alignment,
-            emotional_mirroring: analysisData.quantitative.emotional_mirroring,
-            effort_reciprocity: analysisData.quantitative.effort_reciprocity,
-            conflict_handling: analysisData.quantitative.conflict_handling,
-            respect_level: analysisData.quantitative.respect_level,
-            empathy_signals: analysisData.quantitative.empathy_signals,
-            playfulness: analysisData.quantitative.playfulness,
+            love_language_alignment: quantitative.love_language_alignment,
+            emotional_mirroring: quantitative.emotional_mirroring,
+            effort_reciprocity: quantitative.effort_reciprocity,
+            conflict_handling: quantitative.conflict_handling,
+            respect_level: quantitative.respect_level,
+            empathy_signals: quantitative.empathy_signals,
+            playfulness: quantitative.playfulness,
           },
           descriptive: {
-            togetherness_outlook: analysisData.descriptive.togetherness_outlook,
-            intellectual_connection_description: analysisData.descriptive.intellectual_connection_description,
-            dependency_balance_description: analysisData.descriptive.dependency_balance_description,
-            friendship_layer_strength: analysisData.descriptive.friendship_layer_strength,
+            togetherness_outlook: descriptive.togetherness_outlook,
+            intellectual_connection_description: descriptive.intellectual_connection_description,
+            dependency_balance_description: descriptive.dependency_balance_description,
+            friendship_layer_strength: descriptive.friendship_layer_strength,
           },
-        }
+        };
       case "future":
         return {
           quantitative: {
-            future_commitment_signals: analysisData.quantitative.future_commitment_signals,
-            imagining_shared_future: analysisData.quantitative.imagining_shared_future,
-            planning_together: analysisData.quantitative.planning_together,
-            sacrifices_mentioned: analysisData.quantitative.sacrifices_mentioned,
-            trust_level: analysisData.quantitative.trust_level,
-            sense_of_security: analysisData.quantitative.sense_of_security,
+            future_commitment_signals: quantitative.future_commitment_signals,
+            imagining_shared_future: quantitative.imagining_shared_future,
+            planning_together: quantitative.planning_together,
+            sacrifices_mentioned: quantitative.sacrifices_mentioned,
+            trust_level: quantitative.trust_level,
+            sense_of_security: quantitative.sense_of_security,
           },
           descriptive: {
-            relationship_growth_potential: analysisData.descriptive.relationship_growth_potential,
-            long_term_stability_prediction: analysisData.descriptive.long_term_stability_prediction,
+            relationship_growth_potential: descriptive.relationship_growth_potential,
+            long_term_stability_prediction: descriptive.long_term_stability_prediction,
           },
-        }
+        };
       default:
-        return analysisData
+        return { quantitative, descriptive };
     }
   }
 
@@ -205,72 +206,29 @@ export default function InsightsPage() {
                 </Button>
               </div>
             </div>
-            <CardDescription>
-              Based on {messageCount} messages over {durationDays} days ({timeSpan})
+            <CardDescription className="mt-2 text-gray-600">
+              {timeSpan && (
+                <span>
+                  <strong>Time Span:</strong> {timeSpan} | <strong>Messages:</strong> {messageCount} | <strong>Duration:</strong> {durationDays} days
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <Tabs defaultValue="overview" className="w-full" onValueChange={(value) => setActiveTab(value)}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="overview" className="transition-all hover:bg-muted/80">
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger value="compatibility" className="transition-all hover:bg-muted/80">
-                  Compatibility
-                </TabsTrigger>
-                <TabsTrigger value="future" className="transition-all hover:bg-muted/80">
-                  Future Outlook
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="overview" className="pt-6 animate-fade-in">
-                {isLoading ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">Analyzing your relationship data...</p>
-                  </div>
-                ) : analysisData ? (
-                  <RelationshipAnalysis
-                    data={getFilteredData() || analysisData}
-                    messageDistribution={messageDistribution}
-                  />
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No analysis data available. Please try uploading your files again.</p>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="compatibility" className="pt-6 animate-fade-in">
-                {isLoading ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">Analyzing compatibility factors...</p>
-                  </div>
-                ) : analysisData ? (
-                  <RelationshipAnalysis
-                    data={getFilteredData() || analysisData}
-                    messageDistribution={messageDistribution}
-                  />
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No analysis data available. Please try uploading your files again.</p>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="future" className="pt-6 animate-fade-in">
-                {isLoading ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">Analyzing future relationship potential...</p>
-                  </div>
-                ) : analysisData ? (
-                  <RelationshipAnalysis
-                    data={getFilteredData() || analysisData}
-                    messageDistribution={messageDistribution}
-                  />
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No analysis data available. Please try uploading your files again.</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+          <CardContent>
+            {(() => {
+              const filteredData = getFilteredData();
+              const isValidData =
+                filteredData &&
+                typeof filteredData === 'object' &&
+                'quantitative' in filteredData &&
+                'descriptive' in filteredData;
+              return isValidData ? (
+                <RelationshipAnalysis
+                  data={filteredData}
+                  messageDistribution={messageDistribution}
+                />
+              ) : null;
+            })()}
           </CardContent>
         </Card>
       </div>
